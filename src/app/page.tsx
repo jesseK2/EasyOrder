@@ -70,11 +70,6 @@ export default function Home() {
     window.setTimeout(() => setNotice(""), 2400);
   }
 
-  async function signIn() {
-    if (!supabase) { setNotice("Add your Supabase keys to .env.local to enable sign in."); return; }
-    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
-  }
-
   async function signOut() {
     await supabase?.auth.signOut();
     setUserEmail(null);
@@ -92,7 +87,7 @@ export default function Home() {
           <a href="#shop" onClick={() => setMenuOpen(false)}>Shop all</a><a href="#story" onClick={() => setMenuOpen(false)}>Our approach</a><a href="#newsletter" onClick={() => setMenuOpen(false)}>Journal</a>
         </nav>
         <div className="header-actions">
-          {userEmail ? <button className="account-link" onClick={signOut} title={`Signed in as ${userEmail}`}>Sign out</button> : <button className="account-link" onClick={signIn}>Sign in</button>}
+          {userEmail ? <button className="account-link" onClick={signOut} title={`Signed in as ${userEmail}`}>Sign out</button> : <Link className="account-link" href="/sign-in">Sign in</Link>}
           <Link href="/checkout" className="bag-link" aria-label={`Shopping bag, ${itemCount} items`}><ShoppingBag size={18} strokeWidth={1.7} /><span>Bag</span><b>{itemCount}</b></Link>
         </div>
       </header>

@@ -14,6 +14,7 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [completed, setCompleted] = useState(false);
@@ -21,7 +22,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     setCart(readStoredCart());
     const client = supabase;
-    if (!client) return;
+    if (!client) {
+      setAuthChecked(true);
+      return;
+    }
     void client.auth.getSession().then(async ({ data }) => {
       const currentUser = data.session?.user;
       if (!currentUser) return;
@@ -34,17 +38,13 @@ export default function CheckoutPage() {
         setCart(restored);
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(restored));
       }
-    });
+    }).catch(() => setMessage("We couldn't check your sign-in status. Please reload and try again."))
+      .finally(() => setAuthChecked(true));
   }, []);
 
   const subtotal = cart.reduce((sum, line) => sum + line.product.price_cents * line.quantity, 0);
   const shipping = subtotal >= 7500 || subtotal === 0 ? 0 : 700;
   const total = subtotal + shipping;
-
-  async function signIn() {
-    if (!supabase) { setMessage("Supabase is not configured yet. Follow the setup guide to connect it."); return; }
-    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + "/checkout" } });
-  }
 
   async function updateQuantity(productId: string, delta: number) {
     const next = cart.map((line) => line.product.id === productId ? { ...line, quantity: line.quantity + delta } : line).filter((line) => line.quantity > 0);
@@ -95,13 +95,16 @@ export default function CheckoutPage() {
     setBusy(false);
   }
 
+  if (!authChecked) return <main className="checkout-shell"><header className="checkout-header"><Link className="brand-link" href="/" aria-label="EasyOrder home"><BrandLogo /></Link><span><LockKeyhole size={14} /> Secure checkout</span></header><section className="checkout-signin-gate"><p className="eyebrow">One moment</p><h1>Getting your<br /><em>order ready.</em></h1><p>Checking your account and saved bag.</p></section></main>;
+
+  if (!userId) return <main className="checkout-shell"><header className="checkout-header"><Link className="brand-link" href="/" aria-label="EasyOrder home"><BrandLogo /></Link><span><LockKeyhole size={14} /> Secure checkout</span></header><section className="checkout-signin-gate"><div className="gate-icon"><ShoppingBag size={22} strokeWidth={1.5} /></div><p className="eyebrow">Your bag is saved</p><h1>Sign in to<br /><em>check out.</em></h1><p>{supabase ? "Sign in with Google to continue to delivery details. Your bag will be waiting when you return." : "Google sign-in is not connected yet. The shop owner needs to finish the Supabase setup before checkout can continue."}</p><Link className="button-dark" href="/sign-in?next=%2Fcheckout">Continue to sign in <ArrowRight size={16} /></Link><Link href="/" className="back-link">Back to the shop</Link></section></main>;
+
   if (completed) return <main className="checkout-shell"><Link className="brand-link" href="/" aria-label="EasyOrder home"><BrandLogo /></Link><section className="success-panel"><CheckCircle2 size={44} strokeWidth={1.3} /><p className="eyebrow">Order received</p><h1>Thank you for<br /><em>shopping small.</em></h1><p>{message}</p><Link className="button-dark" href="/">Back to the shop <ArrowRight size={16} /></Link></section></main>;
 
   return <main className="checkout-shell">
     <header className="checkout-header"><Link className="brand-link" href="/" aria-label="EasyOrder home"><BrandLogo /></Link><span><LockKeyhole size={14} /> Secure checkout</span></header>
     <div className="checkout-layout">
       <section className="checkout-form-wrap"><Link className="back-link" href="/"><ArrowLeft size={15} /> Back to shop</Link><p className="eyebrow">Your order, nearly there</p><h1>Check <em>out.</em></h1>
-        {!userId && <div className="signin-callout"><div><b>Sign in to continue</b><p>Use Google to keep your order and cart connected to your account.</p></div><button type="button" className="google-button" onClick={signIn}>Continue with Google <ArrowRight size={15} /></button></div>}
         <form className="checkout-form" onSubmit={placeOrder}>
           <div className="form-section-title"><span>01</span><h2>Contact</h2></div>
           <label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required readOnly={!!userId} placeholder="you@example.com" /></label>
