@@ -37,12 +37,23 @@ A small everyday-goods storefront and checkout built with Next.js, Supabase (Pos
 4. Set `MAILGUN_REGION` to `api` for US or `api.eu` for EU. The endpoint uses the Mailgun API key only on the server.
 5. Send a test order after sign-in and check both the app response and Mailgun **Sending → Logs**.
 
-### 4. Deploy
+### 4. Deploy to Netlify
 
-1. Push the project to your Git provider and import it into Vercel (or another host that supports Next.js route handlers).
-2. Add every `.env.local` value as a hosting environment variable. Keep the service-role key and Mailgun key server-only.
-3. Deploy, then add the production URL to the Google authorized origins and Supabase redirect URL allow list.
-4. Apply future SQL migrations before deploying application changes that depend on them.
+1. Push the project to GitHub and open [Netlify](https://app.netlify.com/). Choose **Add new site → Import an existing project**, connect GitHub, and select `jesseK2/EasyOrder`.
+2. Keep the build command as `npm run build` and the publish directory as `.next`. The included `netlify.toml` enables Netlify's Next.js runtime plugin for pages and API routes.
+3. Before the first deploy, add these in **Site configuration → Environment variables**:
+	- `NEXT_PUBLIC_SUPABASE_URL`
+	- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+	- `SUPABASE_SERVICE_ROLE_KEY`
+	- `MAILGUN_API_KEY`
+	- `MAILGUN_DOMAIN`
+	- `MAILGUN_FROM`
+	- `MAILGUN_REGION`
+4. Set the `NEXT_PUBLIC_` values to the Supabase project URL and publishable/anon key. Keep the service-role and Mailgun keys server-only. Never put secrets in GitHub or prefix them with `NEXT_PUBLIC_`.
+5. Choose **Deploy site**. Netlify will build and publish the site at a `*.netlify.app` URL.
+6. In Supabase **Authentication → URL Configuration**, set the Site URL to the Netlify site origin and add `https://YOUR-SITE.netlify.app/**` to the redirect allow list. Keep the local development URL there too if you still test locally.
+7. Add `https://YOUR-SITE.netlify.app` as an authorized JavaScript origin in Google Cloud. The Google OAuth client's authorized redirect URI stays the Supabase callback URL shown in Supabase's Google provider settings.
+8. For later code changes, push to GitHub and Netlify will build a new deploy automatically. Apply SQL migrations in Supabase before deploying application changes that depend on them.
 
 ## Important before taking real orders
 
